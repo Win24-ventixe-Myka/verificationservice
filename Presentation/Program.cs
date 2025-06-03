@@ -10,14 +10,24 @@ builder.Services.AddMemoryCache();
 builder.Services.AddSingleton(x => new EmailClient(builder.Configuration["ACS:ConnectionString"]));
 builder.Services.AddTransient<IVerificationService, VerificationService>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
 }
 app.MapOpenApi();
+app.UseCors();
 app.UseHttpsRedirection();
 app.UseAuthorization();
-app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 app.UseAuthentication();
 
 app.MapControllers();

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using Azure;
 using Azure.Communication.Email;
 using Microsoft.Extensions.Caching.Memory;
 using Presentation.Interfaces;
@@ -15,12 +17,15 @@ public class VerificationService(IConfiguration configuration, EmailClient email
     
     public async Task<VerificationServiceResult> SendVerificationCodeAsync(SendVerificationCodeRequest request)
     {
-        if (request == null || string.IsNullOrWhiteSpace(request.Email))
-            return new VerificationServiceResult { Succeeded = false, Error = "Email is required" };
 
-        var verificationCode = _random.Next(100000, 99999).ToString();
-        var subject = $"Your code is {verificationCode}";
-        var plainTextContent = $@"
+        try
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Email))
+                return new VerificationServiceResult { Succeeded = false, Error = "Email is required" };
+
+            var verificationCode = _random.Next(100000, 1000000).ToString();
+            var subject = $"Your code is {verificationCode}";
+            var plainTextContent = $@"
         Verify Your Email Address
         
         Hello, 
@@ -38,7 +43,7 @@ public class VerificationService(IConfiguration configuration, EmailClient email
         © domain.com All rights reserved. 
         ";
 
-        var htmlContent = $@"
+            var htmlContent = $@"
             <!DOCTYPE html>
 <html lang=""en"">
 <head>
@@ -80,13 +85,33 @@ public class VerificationService(IConfiguration configuration, EmailClient email
 </body>
 </html>
 ";
+
+            var emailMessage = new EmailMessage(
+                senderAddress: _configuration["ACS:SenderAddress"],
+                recipients: new EmailRecipients([new(request.Email)]),
+                content: new EmailContent(subject)
+                {
+                    PlainText = plainTextContent,
+                    Html = htmlContent
+                });
+
+            var emailSendOperation = await _emailClient.SendAsync(WaitUntil.Started, emailMessage);
+            SaveVerificationCode(new SaveVerificationCodeRequest
+                { Email = request.Email, Code = verificationCode, ValidFor = TimeSpan.FromMinutes(5) });
+            
+            return new VerificationServiceResult { Succeeded = true, Message = "Verification email sent successfully" };
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex);
+            return new VerificationServiceResult { Succeeded = false, Error = "Failed to send verification email" };
+        }
         
     }
 
-    public Task SaveVerificationCode(SaveVerificationCodeRequest request)
+    public void SaveVerificationCode(SaveVerificationCodeRequest request)
     {
         _cache.Set(request.Email.ToLowerInvariant(), request.Code, request.ValidFor);
-        return Task.CompletedTask;
     }
 
     public VerificationServiceResult VerifyVerificationCode(VerifyVerificationCodeRequest request)

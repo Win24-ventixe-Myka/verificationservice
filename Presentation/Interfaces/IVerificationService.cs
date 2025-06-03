@@ -6,7 +6,7 @@ public interface IVerificationService
 {
     Task<VerificationServiceResult> SendVerificationCodeAsync(SendVerificationCodeRequest request);
     
-    Task SaveVerificationCode(SaveVerificationCodeRequest request);
+    void SaveVerificationCode(SaveVerificationCodeRequest request);
 
     VerificationServiceResult VerifyVerificationCode(VerifyVerificationCodeRequest request);
 }

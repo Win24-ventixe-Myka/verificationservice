@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.sln.docstates
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Configuration & secrets
+appsettings.json
+appsettings.*.json
+secrets.json
+
+# Logs
+*.log
+
+# OS/system
+.DS_Store
+.vscode/
